@@ -241,7 +241,7 @@ void TestGraph()
     }
     cout << endl;
 
-    cout << "Cas optimiste : ";
+    cout << "Cas stable : ";
 
     pc = g.stableIt();
 
