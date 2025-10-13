@@ -9,7 +9,7 @@ struct Node
 {
     int node;
     tuple<int, int> minMax;
-    // bool marked = false;
+    
 } ;
 
 //prints a list of nodes
