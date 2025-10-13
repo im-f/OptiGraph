@@ -9,6 +9,7 @@ struct Node
 {
     int node;
     tuple<int, int> minMax;
+    // bool marked = false;
 } ;
 
 //prints a list of nodes
@@ -17,7 +18,7 @@ ostream& operator<<(ostream& os, list<Node> l)
     os << "| ";
     for(auto n : l)
     {
-        os << n.node << " {" << get<0>(n.minMax) << ".." << get<1>(n.minMax) << "} | ";
+        os << n.node << " {" << get<0>(n.minMax) << ".." << get<1>(n.minMax) <<  " } | ";
     }
     return os;
 }
@@ -46,6 +47,8 @@ public:
             cout << n.first << " --> " << n.second << endl;
         }
     }
+
+
 
     //À completer 
 
