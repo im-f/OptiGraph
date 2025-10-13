@@ -51,22 +51,99 @@ public:
 
     list<int> pireCasIt ()
     {
-        return {};
+        list<int> chemin = {1}; 
+        list<Node> n = g[1];
+        int time = 0;
+        while(!n.empty())
+        {
+            int i = 0, max = 0;
+            for(auto a:n)
+            {
+                if(get<1>(a.minMax) >= max)
+                {
+                    max = get<1>(a.minMax); 
+                    i = a.node;
+                }
+            }
+            time += max;
+            chemin.push_back(i);
+            n = g[i];
+        }
+        chemin.push_back(time);
+        return chemin;
     }
 
     list<int> optimisteIt ()
     {
-        return {};
+        list<int> chemin = {1}; 
+        list<Node> n = g[1];
+        int time = 0;
+        while(!n.empty())
+        {
+            int i = 0, min = -1;
+            for(auto a:n)
+            {
+                if(get<0>(a.minMax) <= min || min < 0)
+                {
+                    min = get<0>(a.minMax); 
+                    i = a.node;
+                }
+            }
+            time += min;
+            chemin.push_back(i);
+            n = g[i];
+        }
+        chemin.push_back(time);
+        return chemin;
     }
 
     list<int> prudentIt ()
     {
-        return {};
+        list<int> chemin = {1}; 
+        list<Node> n = g[1];
+        int time = 0;
+        while(!n.empty())
+        {
+            int i = 0, min = -1;
+            for(auto a:n)
+            {
+                if(get<1>(a.minMax) <= min || min < 0)
+                {
+                    min = get<1>(a.minMax); 
+                    i = a.node;
+                }
+            }
+            time += min;
+            chemin.push_back(i);
+            n = g[i];
+        }
+        chemin.push_back(time);
+        return chemin;
     }
 
     list<int> stableIt ()
     {
-        return {};
+        list<int> chemin = {1}; 
+        list<Node> n = g[1];
+        int time = 0;
+        while(!n.empty())
+        {
+            int i = 0, min = -1;
+            for(auto a:n)
+            {
+                int dif = get<1>(a.minMax) - get<0>(a.minMax);
+                if(dif <= min || min < 0)
+                {
+                    min = dif; 
+                    i = a.node;
+                }
+            }
+            time += min;
+            chemin.push_back(i);
+            n = g[i];
+        }
+        chemin.push_back(time);
+        return chemin;
     }
 
 };
@@ -123,6 +200,59 @@ void TestGraph()
     g.AddConnect(10, {11, {3,4}});
 
     g.PrintGraph();
+
+    cout << endl;
+    cout << "Pire cas : ";
+
+    list<int> pc = g.pireCasIt();
+
+    cout << pc.back() << " min" << endl;
+    pc.pop_back();
+
+    for(auto i : pc)
+    {
+        cout << i << "-";
+    }
+    cout << endl;
+
+    cout << "Cas optimiste : ";
+
+    pc = g.optimisteIt();
+
+    cout << pc.back() << " min" << endl;
+    pc.pop_back();
+
+    for(auto i : pc)
+    {
+        cout << i << "-";
+    }
+    cout << endl;
+
+    cout << "Cas prudent : ";
+
+    pc = g.prudentIt();
+
+    cout << pc.back() << " min" << endl;
+    pc.pop_back();
+
+    for(auto i : pc)
+    {
+        cout << i << "-";
+    }
+    cout << endl;
+
+    cout << "Cas optimiste : ";
+
+    pc = g.stableIt();
+
+    cout << pc.back() << " min" << endl;
+    pc.pop_back();
+
+    for(auto i : pc)
+    {
+        cout << i << "-";
+    }
+    cout << endl;
 }
 
 int main () 
