@@ -2,6 +2,9 @@
 #include <map>
 #include <tuple>
 #include <list>
+#include <vector>
+#include <queue>
+#include <climits>
 
 using namespace std;
 
@@ -65,6 +68,73 @@ public:
         {
             cout << n.first << " --> " << n.second << endl;
         }
+    }
+
+    //tri topologique (kahn)
+    vector<int> triTopo(){
+        map<int, int> degres;
+        for(auto n : g){
+            degres[n.first] = 0;
+        }
+        for(auto n : g){
+            for(auto m : n.second){
+                degres[m.node]++;
+            }
+        }
+
+        queue<int> q;
+        for(auto n : degres){
+            if(n.second == 0){
+                q.push(n.first);
+            }
+        }
+
+        vector<int> topo;
+        while(!q.empty()){
+            int n = q.front();
+            q.pop();
+            topo.push_back(n);
+            for(auto m : g[n]){
+                degres[m.node]--;
+                if(degres[m.node] == 0){
+                    q.push(m.node);
+                }
+            }
+        }
+        return topo;
+    }
+
+    list<int> pireCasGlobal(int s, int t){
+        map<int, int> dist;
+        map<int, int> pred;
+        for(auto n : g){
+            dist[n.first] = INT_MIN;
+            pred[n.first] = -1;
+        }
+        dist[s] = 0;
+
+        vector<int> topo = triTopo();
+        for(auto n : topo){
+            if (dist[n] != INT_MIN){
+                for(auto m: g[n]){
+                    int v = m.node;
+                    int w = get<1>(m.minMax);
+                    if(dist[v] < dist[n] + w){
+                        dist[v] = dist[n] + w;
+                        pred[v] = n;
+                    } 
+                }
+            }
+        }
+
+        list<int> chemin;
+        int n = t;
+        while(n != -1){
+            chemin.push_front(n);
+            n = pred[n];
+        }
+        chemin.push_back(dist[t]);
+        return chemin;
     }
 
     //À completer 
@@ -362,6 +432,22 @@ void TestGraph()
         cout << i << "-";
     }
     cout << endl;
+
+
+    cout << "Pire cas global : ";
+
+    pc = g.pireCasGlobal(1,11);
+
+    cout << pc.back() << " min" << endl;
+    pc.pop_back();
+
+    for(auto i : pc)
+    {
+        cout << i << "-";
+    }
+    cout << endl;
+
+
 
     cout << "Cas optimiste : ";
 
