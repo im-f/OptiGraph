@@ -137,6 +137,40 @@ public:
         return chemin;
     }
 
+    list<int> plc(int s, int t){
+        map<int, int> dist;
+        map<int, int> pred;
+        for(auto n : g){
+            dist[n.first] = INT_MAX;
+            pred[n.first] = -1;
+        }
+        dist[s] = 0;
+
+        vector<int> topo = triTopo();
+        for(auto n : topo){
+            if (dist[n] != INT_MAX){
+                for(auto m: g[n]){
+                    int v = m.node;
+                    int w = get<0>(m.minMax);
+                    if(dist[v] > dist[n] + w){
+                        dist[v] = dist[n] + w;
+                        pred[v] = n;
+                    } 
+                }
+            }
+        }
+
+        list<int> chemin;
+        int n = t;
+        while(n != -1){
+            chemin.push_front(n);
+            n = pred[n];
+        }
+        chemin.push_back(dist[t]);
+        return chemin;
+    }
+
+
     //À completer 
 
     list<int> pireCasIt ()
@@ -447,6 +481,19 @@ void TestGraph()
     }
     cout << endl;
 
+
+    cout << "Plus court : ";
+
+    pc = g.plc(1,11);
+
+    cout << pc.back() << " min" << endl;
+    pc.pop_back();
+
+    for(auto i : pc)
+    {
+        cout << i << "-";
+    }
+    cout << endl;
 
 
     cout << "Cas optimiste : ";
