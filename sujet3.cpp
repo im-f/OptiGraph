@@ -5,6 +5,7 @@
 #include <vector>
 #include <queue>
 #include <climits>
+#include <algorithm>
 
 using namespace std;
 
@@ -12,6 +13,14 @@ struct Node
 {
     int node;
     tuple<int, int> minMax;
+};
+
+enum typeIt
+{
+    pire,
+    optimiste,
+    prudent,
+    stable
 };
 
 //prints a list of nodes
@@ -25,6 +34,7 @@ ostream& operator<<(ostream& os, list<Node> l)
     return os;
 }
 
+
 class Graph {
 
     int init = 1;
@@ -37,11 +47,11 @@ private:
     {
         list<int> chemin = {get<1>(distPrec[term-1])};
 
-        int n = term - 1;
+        int n = term;
         while(n != 0)
         {
-            chemin.push_front(n+1);
-            n = get<0>(distPrec[n]);
+            chemin.push_front(n);
+            n = get<0>(distPrec[n-1]);
         }
         chemin.push_front(1);
 
@@ -57,6 +67,9 @@ public:
 
     void AddConnect(int initiale, Node terminale)
     {
+        assert(get<0>(terminale.minMax) < get<1>(terminale.minMax));
+        assert(get<0>(terminale.minMax) > 0 && get<1>(terminale.minMax) > 0);
+
         g[initiale].push_back(terminale);
         g[terminale.node] = {};
         term = terminale.node;
@@ -69,6 +82,12 @@ public:
             cout << n.first << " --> " << n.second << endl;
         }
     }
+
+
+        /************************************************************************************************************/
+        /********************************************* khan + dijkstra **********************************************/
+        /************************************************************************************************************/
+
 
     //tri topologique (kahn)
     vector<int> triTopo(){
@@ -104,74 +123,104 @@ public:
         return topo;
     }
 
-    list<int> pireCasGlobal(int s, int t){
-        map<int, int> dist;
-        map<int, int> pred;
-        for(auto n : g){
-            dist[n.first] = INT_MIN;
-            pred[n.first] = -1;
-        }
-        dist[s] = 0;
+    list<int> plc(typeIt cas){
+
+        int def = cas == pire? INT_MIN : INT_MAX;
+        vector<tuple<int, int>> distPrec(term, {-1, def});
+        distPrec[0] = {0, 0};
 
         vector<int> topo = triTopo();
         for(auto n : topo){
-            if (dist[n] != INT_MIN){
+
+            int dis = get<1>(distPrec[n-1]);
+
+            if (dis != def){
                 for(auto m: g[n]){
-                    int v = m.node;
-                    int w = get<1>(m.minMax);
-                    if(dist[v] < dist[n] + w){
-                        dist[v] = dist[n] + w;
-                        pred[v] = n;
+
+                    int v = m.node-1;
+
+                    int w = cas == optimiste? get<0>(m.minMax) : 
+                            cas == stable? get<1>(m.minMax) - get<0>(m.minMax) : 
+                            get<1>(m.minMax); 
+
+                    bool cond = cas == pire? get<1>(distPrec[v]) < dis + w : get<1>(distPrec[v]) > dis + w;
+
+                    if(cond){
+
+                        distPrec[v] = {n, dis + w};
+
                     } 
                 }
             }
         }
-
-        list<int> chemin;
-        int n = t;
-        while(n != -1){
-            chemin.push_front(n);
-            n = pred[n];
-        }
-        chemin.push_back(dist[t]);
-        return chemin;
+        return buildChemin(distPrec);
     }
 
-    list<int> plc(int s, int t){
-        map<int, int> dist;
-        map<int, int> pred;
-        for(auto n : g){
-            dist[n.first] = INT_MAX;
-            pred[n.first] = -1;
-        }
-        dist[s] = 0;
 
-        vector<int> topo = triTopo();
-        for(auto n : topo){
-            if (dist[n] != INT_MAX){
-                for(auto m: g[n]){
-                    int v = m.node;
-                    int w = get<0>(m.minMax);
-                    if(dist[v] > dist[n] + w){
-                        dist[v] = dist[n] + w;
-                        pred[v] = n;
+        /************************************************************************************************************/
+        /********************************************* dijkstra-moore ***********************************************/
+        /************************************************************************************************************/
+
+
+    // Algorithme dijkstra-moore 
+    void bis(vector<bool>* marked, vector<tuple<int, int>>* distPrec, int i, typeIt cas)
+    {
+        if(not (*marked)[term - 1])
+        {
+            (*marked)[i] = true;
+            list<Node> n = g[i+1];
+            for(auto a:n)
+            {
+                int j = a.node-1;
+                int di = get<1>((*distPrec)[i]), dj = get<1>((*distPrec)[j]);
+
+                if(not (*marked)[j])
+                {
+                    int val = cas == optimiste? get<0>(a.minMax) : 
+                              cas == prudent? get<1>(a.minMax) : 
+                              get<1>(a.minMax) - get<0>(a.minMax); 
+
+                    if(dj > di + val)
+                    {
+                        (*distPrec)[j] = {i, di + val};
                     } 
                 }
             }
+
+            int min = INT_MAX;
+            for(int b = 0; b < (*marked).size(); b++)
+            {
+                int db = get<1>((*distPrec)[b]);
+                if(not (*marked)[b])
+                {
+                    if(min > db)
+                    {
+                        min = db; i = b;
+                    }
+                }
+            }
+
+            bis(marked, distPrec, i, cas);
         }
 
-        list<int> chemin;
-        int n = t;
-        while(n != -1){
-            chemin.push_front(n);
-            n = pred[n];
-        }
-        chemin.push_back(dist[t]);
-        return chemin;
+    }
+
+    list<int> dijkstra(typeIt cas)
+    {
+        vector<bool> marked(term, false);
+        vector<tuple<int, int>> distPrec(term, {0, INT_MAX});
+        distPrec[0] = {0,0};
+
+        bis(&marked, &distPrec, 0, cas);
+
+        return buildChemin(distPrec);
     }
 
 
-    //À completer 
+        /************************************************************************************************************/
+        /*********************************************** Algo simple ************************************************/
+        /************************************************************************************************************/
+
 
     list<int> pireCasIt ()
     {
@@ -195,60 +244,6 @@ public:
         }
         chemin.push_back(time);
         return chemin;
-    }
-
-    // Algorithme Dijiskra-Moore 
-    void bis(vector<bool>* marked, vector<tuple<int, int>>* distPrec, int i, int algo)
-    {
-        if(not (*marked)[term - 1])
-        {
-            (*marked)[i] = true;
-            list<Node> n = g[i+1];
-            for(auto a:n)
-            {
-                int j = a.node-1;
-                int di = get<1>((*distPrec)[i]), dj = get<1>((*distPrec)[j]);
-
-                if(not (*marked)[j])
-                {
-                    int val = algo == 0? get<0>(a.minMax) : //si algo est egale a 0, on fait le cas optimiste
-                              algo == 1? get<1>(a.minMax) : //si il est egale a 1, on fait le cas prudent
-                              get<1>(a.minMax) - get<0>(a.minMax); //sinon, on prend le cas stable
-
-                    if(dj > di + val || dj == 0)
-                    {
-                        (*distPrec)[j] = {i, di + val};
-                    } 
-                }
-            }
-
-            int min = -1;
-            for(int b = 0; b < (*marked).size(); b++)
-            {
-                int db = get<1>((*distPrec)[b]);
-                if(not (*marked)[b])
-                {
-                    if((min < 0 || min > db) && db != 0)
-                    {
-                        min = db; i = b;
-                    }
-                }
-            }
-
-            bis(marked, distPrec, i, algo);
-        }
-
-    }
-
-    
-    list<int> optimisteIt ()
-    {
-        vector<bool> marked(term, false);
-        vector<tuple<int, int>> distPrec(term, {0,0});
-
-        bis(&marked, &distPrec, 0, 0);
-
-        return buildChemin(distPrec);
     }
 
     list<int> optimisteIt1 ()
@@ -275,68 +270,6 @@ public:
         return chemin;
     }
 
-    list<int> optimisteIt2 ()
-    {
-        vector<bool> marked(term, false);
-        vector<int> dist(term, 0);
-        vector<int> pred(term, 0); 
-
-        int i = 0;
-
-        while(not marked[term-1])
-        {
-            marked[i] = true;
-            list<Node> n = g[i+1];
-            for(auto a:n)
-            {
-                int j = a.node-1;
-                if(not marked[j])
-                {
-                    if((dist[j] > dist[i] + get<0>(a.minMax)) || dist[j] == 0)
-                    {
-                        dist[j] = dist[i] + get<0>(a.minMax);
-                        pred[j] = i;
-                    }
-                }
-            }
-            int min = -1;
-            for(int b = 0; b < marked.size(); b++)
-            {
-                if(not marked[b])
-                {
-                    if((min < 0 || min > dist[b]) && dist[b] != 0)
-                    {
-                        min = dist[b];
-                        i = b;
-                    }
-                }
-            }
-        }
-        
-        list<int> chemin = {dist[term-1]};
-
-        int n = term - 1;
-        while(n != 0)
-        {
-            chemin.push_front(n+1);
-            n = pred[n];
-        }
-        chemin.push_front(1);
-        return chemin;
-    }
-
-    
-    
-    list<int> prudentIt ()
-    {
-        vector<bool> marked(term, false);
-        vector<tuple<int, int>> distPrec(term, {0,0});
-
-        bis(&marked, &distPrec, 0, 1);
-
-        return buildChemin(distPrec);
-    }
-
     list<int> prudentIt1 ()
     {
         list<int> chemin = {1}; 
@@ -359,18 +292,6 @@ public:
         }
         chemin.push_back(time);
         return chemin;
-    }
-
-    
-    
-    list<int> stableIt ()
-    {
-        vector<bool> marked(term, false);
-        vector<tuple<int, int>> distPrec(term, {0,0});
-
-        bis(&marked, &distPrec, 0, 2);
-
-        return buildChemin(distPrec);
     }
 
     list<int> stableIt1 ()
@@ -397,7 +318,7 @@ public:
         chemin.push_back(time);
         return chemin;
     }
-
+    
 };
 
 
@@ -470,7 +391,7 @@ void TestGraph()
 
     cout << "Pire cas global : ";
 
-    pc = g.pireCasGlobal(1,11);
+    pc = g.plc(pire);
 
     cout << pc.back() << " min" << endl;
     pc.pop_back();
@@ -484,7 +405,7 @@ void TestGraph()
 
     cout << "Plus court : ";
 
-    pc = g.plc(1,11);
+    pc = g.plc(optimiste);
 
     cout << pc.back() << " min" << endl;
     pc.pop_back();
@@ -498,7 +419,7 @@ void TestGraph()
 
     cout << "Cas optimiste : ";
 
-    pc = g.optimisteIt();
+    pc = g.dijkstra(optimiste);
 
     cout << pc.back() << " min" << endl;
     pc.pop_back();
@@ -511,7 +432,7 @@ void TestGraph()
 
     cout << "Cas prudent : ";
 
-    pc = g.prudentIt();
+    pc = g.dijkstra(prudent);
 
     cout << pc.back() << " min" << endl;
     pc.pop_back();
@@ -524,7 +445,7 @@ void TestGraph()
 
     cout << "Cas stable : ";
 
-    pc = g.stableIt();
+    pc = g.dijkstra(stable);
 
     cout << pc.back() << " min" << endl;
     pc.pop_back();
