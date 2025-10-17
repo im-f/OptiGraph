@@ -53,7 +53,6 @@ private:
             chemin.push_front(n);
             n = get<0>(distPrec[n-1]);
         }
-        chemin.push_front(1);
 
         return chemin;
     }
@@ -213,7 +212,10 @@ public:
 
         bis(&marked, &distPrec, 0, cas);
 
-        return buildChemin(distPrec);
+        list<int> res = buildChemin(distPrec);
+        res.push_front(1);
+
+        return res;
     }
 
 
