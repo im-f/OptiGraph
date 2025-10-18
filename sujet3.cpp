@@ -6,21 +6,24 @@
 #include <queue>
 #include <climits>
 #include <algorithm>
+#include <cassert>
 
 using namespace std;
 
+//structure d'un noeud avec son numero et son min et max de temps
 struct Node
 {
     int node;
     tuple<int, int> minMax;
 };
 
+//type d'itineraire
 enum typeIt
 {
-    pire,
-    optimiste,
-    prudent,
-    stable
+    pire, //plus grande durée en temps max 
+    optimiste, //plus petite durée en temps min)
+    prudent, //plus petite durée en temps max
+    stable //plus petite différence entre temps min et temps max
 };
 
 //prints a list of nodes
@@ -34,7 +37,7 @@ ostream& operator<<(ostream& os, list<Node> l)
     return os;
 }
 
-
+//graph orienté avec des arcs pondérés (min et max)
 class Graph {
 
     int init = 1;
@@ -43,17 +46,19 @@ class Graph {
 
 private:
 
+    //construit le chemin à partir du tableau distPrec 
     list<int> buildChemin(vector<tuple<int, int>> distPrec)
     {
-        list<int> chemin = {get<1>(distPrec[term-1])};
+        int time = get<1>(distPrec[term-1]); //temps total
+        list<int> chemin ;
 
         int n = term;
-        while(n != 0)
+        while(n != 0 && n != -1)
         {
             chemin.push_front(n);
             n = get<0>(distPrec[n-1]);
         }
-
+        chemin.push_back(time); //ajoute le temps total à la fin du chemin
         return chemin;
     }
 
@@ -162,7 +167,7 @@ public:
 
 
     // Algorithme dijkstra-moore 
-    void bis(vector<bool>* marked, vector<tuple<int, int>>* distPrec, int i, typeIt cas)
+    void dij(vector<bool>* marked, vector<tuple<int, int>>* distPrec, int i, typeIt cas)
     {
         if(not (*marked)[term - 1])
         {
@@ -176,12 +181,12 @@ public:
                 if(not (*marked)[j])
                 {
                     int val = cas == optimiste? get<0>(a.minMax) : 
-                              cas == prudent? get<1>(a.minMax) : 
-                              get<1>(a.minMax) - get<0>(a.minMax); 
+                            cas == prudent? get<1>(a.minMax) : 
+                            get<1>(a.minMax) - get<0>(a.minMax); 
 
                     if(dj > di + val)
                     {
-                        (*distPrec)[j] = {i, di + val};
+                        (*distPrec)[j] = {i+1, di + val};
                     } 
                 }
             }
@@ -199,7 +204,7 @@ public:
                 }
             }
 
-            bis(marked, distPrec, i, cas);
+            dij(marked, distPrec, i, cas);
         }
 
     }
@@ -210,10 +215,9 @@ public:
         vector<tuple<int, int>> distPrec(term, {0, INT_MAX});
         distPrec[0] = {0,0};
 
-        bis(&marked, &distPrec, 0, cas);
+        dij(&marked, &distPrec, 0, cas);
 
         list<int> res = buildChemin(distPrec);
-        res.push_front(1);
 
         return res;
     }
