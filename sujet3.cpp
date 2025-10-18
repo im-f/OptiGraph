@@ -218,8 +218,13 @@ public:
         /********************************************* dijkstra-moore ***********************************************/
         /************************************************************************************************************/
 
-
-    // Algorithme dijkstra-moore 
+    /* Algorithme dijkstra-moore en récursive qui s'arrete quand le noeud puit est marqué
+    * @param vecteur de boolean le marquage des noeuds
+    * @param vecteur de tuples du somment p precedent sur le plus court chemin 
+    *           et la distance de l'origine jusqu'a p
+    * @param entier indiquant ou on est dans le graphe
+    * @param cas type d'itinéraire (pire, optimiste, prudent, stable)
+    */ 
     void dij(vector<bool>* marked, vector<tuple<int, int>>* distPrec, int i, typeIt cas)
     {
         if(not (*marked)[term - 1])
@@ -439,7 +444,7 @@ void TestGraph()
     g.AddConnect(10, {11, {3,4}});
 
     cout << endl;
-    
+
     g.PrintGraph();
 
     cout << endl;
