@@ -21,13 +21,13 @@ struct Node
 enum typeIt
 {
     pire, //plus grande durée en temps max 
-    optimiste, //plus petite durée en temps min)
+    optimiste, //plus petite durée en temps min
     prudent, //plus petite durée en temps max
     stable //plus petite différence entre temps min et temps max
 };
 
-//prints a list of nodes
-ostream& operator<<(ostream& os, list<Node> l)
+//affiche un vector de noeuds dans le terminale 
+ostream& operator<<(ostream& os, vector<Node> l)
 {
     os << "| ";
     for(auto n : l)
@@ -42,24 +42,45 @@ class Graph {
 
     int init = 1;
     int term;
-    map<int, list<Node>> g;
+    map<int, vector<Node>> g;
 
 private:
 
     //construit le chemin à partir du tableau distPrec 
-    list<int> buildChemin(vector<tuple<int, int>> distPrec)
+    vector<int> buildChemin(vector<tuple<int, int>> distPrec)
     {
         int time = get<1>(distPrec[term-1]); //temps total
-        list<int> chemin ;
+        vector<int> chemin ;
 
         int n = term;
-        while(n != 0 && n != -1)
+        while(n > 0)
         {
-            chemin.push_front(n);
+            chemin.push_back(n);
             n = get<0>(distPrec[n-1]);
         }
-        chemin.push_back(time); //ajoute le temps total à la fin du chemin
+        reverse(chemin.begin(), chemin.end());
         return chemin;
+    }
+
+    //trouve le temps minimum, maximum et le marge de fluctuation
+    //d'un itineraire a partir d'un chemin donne
+    vector<int> tempsIt(vector<int> chemin)
+    {
+        vector<int> res(3, 0);
+        for(int i = 1; i < chemin.size(); i ++)
+        {
+            vector<Node> n = g[chemin[i-1]];
+            for(auto v : n)
+            {
+                if(v.node == chemin[i])
+                {
+                    res[0] += get<0>(v.minMax);
+                    res[1] += get<1>(v.minMax);
+                    res[2] += get<1>(v.minMax) - get<0>(v.minMax);
+                }
+            }
+        }
+        return res;
     }
 
 public:
@@ -89,6 +110,20 @@ public:
         }
     }
 
+    //Affiche les resultats d'un itineraire a partir du chemin donné
+    void PrintResult(vector<int> pc)
+    {
+        for(auto i : pc)
+        {
+            cout << i << "-";
+        }
+        cout << endl;
+
+        auto temps = tempsIt(pc);
+        cout << "min : " << temps[0] << " min; max : "<< temps[1] << " min; fluctuation : " << temps[2] << " min";
+        cout << endl;
+
+    }
 
         /************************************************************************************************************/
         /********************************************* khan + dijkstra **********************************************/
@@ -143,9 +178,9 @@ public:
 
     /*version optimisée de l'algorithme de plus court chemin pour les DAGs
     * @param cas type d'itinéraire (pire, optimiste, prudent, stable)
-    * @return une liste contenant le chemin et le temps total
+    * @return un vecteur contenant le chemin
     */
-    list<int> plc(typeIt cas){
+    vector<int> plc(typeIt cas){
 
         int def = cas == pire? INT_MIN : INT_MAX;
         vector<tuple<int, int>> distPrec(term, {-1, def});
@@ -190,7 +225,7 @@ public:
         if(not (*marked)[term - 1])
         {
             (*marked)[i] = true;
-            list<Node> n = g[i+1];
+            vector<Node> n = g[i+1];
             for(auto a:n)
             {
                 int j = a.node-1;
@@ -227,7 +262,7 @@ public:
 
     }
 
-    list<int> dijkstra(typeIt cas)
+    vector<int> dijkstra(typeIt cas)
     {
         vector<bool> marked(term, false);
         vector<tuple<int, int>> distPrec(term, {0, INT_MAX});
@@ -235,7 +270,7 @@ public:
 
         dij(&marked, &distPrec, 0, cas);
 
-        list<int> res = buildChemin(distPrec);
+        vector<int> res = buildChemin(distPrec);
 
         return res;
     }
@@ -248,10 +283,10 @@ public:
     /* Algorithme simple itératif pour le pire cas
     * @return une liste contenant le chemin et le temps total
     */
-    list<int> pireCasIt ()
+    vector<int> pireCasIt ()
     {
-        list<int> chemin = {1}; 
-        list<Node> n = g[1];
+        vector<int> chemin = {1}; 
+        vector<Node> n = g[1];
         int time = 0;
         while(!n.empty())
         {
@@ -268,17 +303,16 @@ public:
             chemin.push_back(i);
             n = g[i];
         }
-        chemin.push_back(time);
         return chemin;
     }
 
     /* Algorithme simple itératif pour le cas optimiste
     * @return une liste contenant le chemin et le temps total
     */
-    list<int> optimisteIt1 ()
+    vector<int> optimisteIt1 ()
     {
-        list<int> chemin = {1}; 
-        list<Node> n = g[1];
+        vector<int> chemin = {1}; 
+        vector<Node> n = g[1];
         int time = 0;
         while(!n.empty())
         {
@@ -295,17 +329,16 @@ public:
             chemin.push_back(i);
             n = g[i];
         }
-        chemin.push_back(time);
         return chemin;
     }
 
     /* Algorithme simple itératif pour le cas prudent
     * @return une liste contenant le chemin et le temps total
     */
-    list<int> prudentIt1 ()
+    vector<int> prudentIt1 ()
     {
-        list<int> chemin = {1}; 
-        list<Node> n = g[1];
+        vector<int> chemin = {1}; 
+        vector<Node> n = g[1];
         int time = 0;
         while(!n.empty())
         {
@@ -322,17 +355,16 @@ public:
             chemin.push_back(i);
             n = g[i];
         }
-        chemin.push_back(time);
         return chemin;
     }
 
     /* Algorithme simple itératif pour le cas stable
     * @return une liste contenant le chemin et le temps total
     */
-    list<int> stableIt1 ()
+    vector<int> stableIt1 ()
     {
-        list<int> chemin = {1}; 
-        list<Node> n = g[1];
+        vector<int> chemin = {1}; 
+        vector<Node> n = g[1];
         int time = 0;
         while(!n.empty())
         {
@@ -350,7 +382,6 @@ public:
             chemin.push_back(i);
             n = g[i];
         }
-        chemin.push_back(time);
         return chemin;
     }
     
@@ -412,89 +443,101 @@ void TestGraph()
     cout << endl;
 
     //tests des différents algorithmes
-    //pire cas (local) itératif 
-    cout << "Pire cas : ";
 
-    list<int> pc = g.pireCasIt();
+    
+    cout << "-------------- Pire cas --------------" << endl;
 
-    cout << pc.back() << " min" << endl;
-    pc.pop_back();
+        //pire cas avec algo simple non optimisé
+        cout << "Algo simple" << endl;
 
-    for(auto i : pc)
-    {
-        cout << i << "-";
-    }
-    cout << endl;
+        vector<int> pc = g.pireCasIt();
 
-    //pire cas (global) avec algo optimisé 
-    cout << "Pire cas global : ";
+        g.PrintResult(pc);
 
-    pc = g.plc(pire);
+        //pire cas avec algo optimisé
+        cout << "Optimisé : " << endl;
 
-    cout << pc.back() << " min" << endl;
-    pc.pop_back();
+        pc = g.plc(pire);
 
-    for(auto i : pc)
-    {
-        cout << i << "-";
-    }
-    cout << endl;
+        g.PrintResult(pc);
 
-    //cas optimiste avec algo optimisé
-    cout << "Plus court : ";
+        cout << endl;
 
-    pc = g.plc(optimiste);
+    
+    cout << "------------ Cas Optimiste ------------" << endl;
 
-    cout << pc.back() << " min" << endl;
-    pc.pop_back();
+        //cas optimiste avec algo simple non optimisé
+        cout << "Algo simple" << endl;
 
-    for(auto i : pc)
-    {
-        cout << i << "-";
-    }
-    cout << endl;
+        pc = g.optimisteIt1();
 
-    //cas optimiste avec dijkstra
-    cout << "Cas optimiste : ";
+        g.PrintResult(pc);
 
-    pc = g.dijkstra(optimiste);
+        //cas optimiste avec algo dijkstra
+        cout << "Dijkstra : " << endl;
 
-    cout << pc.back() << " min" << endl;
-    pc.pop_back();
+        pc = g.dijkstra(optimiste);
 
-    for(auto i : pc)
-    {
-        cout << i << "-";
-    }
-    cout << endl;
+        g.PrintResult(pc);
 
-    //cas prudent avec algo dijkstra
-    cout << "Cas prudent : ";
+        //cas optimiste avec algo optimisé
+        cout << "Optimisé : " << endl;
 
-    pc = g.dijkstra(prudent);
+        pc = g.plc(optimiste);
 
-    cout << pc.back() << " min" << endl;
-    pc.pop_back();
+        g.PrintResult(pc);
 
-    for(auto i : pc)
-    {
-        cout << i << "-";
-    }
-    cout << endl;
+        cout << endl;
 
-    //cas stable avec algo dijkstra
-    cout << "Cas stable : ";
+    cout << "------------- Cas prudent -------------" << endl;
 
-    pc = g.dijkstra(stable);
+        //cas prudent avec algo simple non optimisé
+        cout << "Algo simple" << endl;
 
-    cout << pc.back() << " min" << endl;
-    pc.pop_back();
+        pc = g.prudentIt1();
 
-    for(auto i : pc)
-    {
-        cout << i << "-";
-    }
-    cout << endl;
+        g.PrintResult(pc);
+
+        //cas prudent avec algo dijkstra
+        cout << "Dijkstra : " << endl;
+
+        pc = g.dijkstra(prudent);
+
+        g.PrintResult(pc);
+
+        //cas prudent avec algo optimisé
+        cout << "Optimisé : " << endl;
+
+        pc = g.plc(prudent);
+
+        g.PrintResult(pc);
+
+        cout << endl;
+
+    cout << "------------- Cas stable -------------" << endl;
+
+        //cas stable avec algo simple non optimisé
+        cout << "Algo simple" << endl;
+
+        pc = g.stableIt1();
+
+        g.PrintResult(pc);
+
+        //cas stable avec algo dijkstra
+        cout << "Dijkstra : " << endl;
+
+        pc = g.dijkstra(stable);
+
+        g.PrintResult(pc);
+
+        //cas stable avec algo optimisé
+        cout << "Optimisé : " << endl;
+
+        pc = g.plc(stable);
+
+        g.PrintResult(pc);
+
+        cout << endl;
 }
 
 int main () 
