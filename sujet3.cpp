@@ -438,6 +438,8 @@ void TestGraph()
 
     g.AddConnect(10, {11, {3,4}});
 
+    cout << endl;
+    
     g.PrintGraph();
 
     cout << endl;
